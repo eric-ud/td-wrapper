@@ -1,10 +1,10 @@
-# td-wrapper: over engineered wrapper for official Teradata SQL Driver for Python
+# td-wrapper: overengineered wrapper for the official Teradata SQL Driver for Python.
 
 ## What is it?
 
-**td-wrapper** is a wrapper for much easer ad-hoc querying Teradata.
+**td-wrapper** is a wrapper for much easier ad-hoc querying Teradata.
 
-**This is project for my own convenience, user discretion is advised.**
+**This is a project for my own convenience; user discretion is advised.**
 
 ## Features
 
@@ -14,7 +14,7 @@
 
 ## Use
 
-There is example in /examples folder.
+There is an example in the /examples folder.
 
 ```python
 with teradatasql.connect(
