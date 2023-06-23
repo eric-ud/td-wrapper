@@ -11,10 +11,12 @@ PASSWORD = getpass("Password:")
 query_text = """
     {fn teradata_nativesql}{fn teradata_get_errors};
 
+    --this is single line comments ; /*
+
     CREATE VOLATILE TABLE test (
         ints INT NOT NULL,
         dts date not null,
-        dt_time timestamp not null,
+        dt_time timestamp not null, --What a type!
         nullable_dt_time timestamp null,
         strs varchar(255) not null,
         floats numeric(16,3) not null,
@@ -24,7 +26,11 @@ query_text = """
     PRIMARY INDEX (ints)
     ON COMMIT PRESERVE ROWS;
 
+    --*/
+
     insert into test (?, ?, ?, ?, ?, ?, ?, ?);
+
+    /*insert into test (????????);*/
 
     select * from test order by ints;
 

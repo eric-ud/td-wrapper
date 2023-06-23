@@ -165,8 +165,12 @@ class Query:
                 'Only list or None type is allowed for property "input_data".'
             )
 
+        query = re.sub("--.*$", "", self.query_text, flags=re.MULTILINE)
+        query = re.sub("\/\*.*\*\/", "", query, flags=re.MULTILINE | re.DOTALL)
+        query = query.lower()
+
         insert_count = 0
-        for statement in self.query_text.split(";")[:-1]:
+        for statement in query.split(";")[:-1]:
             reg_td = re.search(
                 "{fn teradata_[\w()]*}", statement, re.MULTILINE | re.IGNORECASE
             )

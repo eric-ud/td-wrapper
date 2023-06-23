@@ -35,5 +35,5 @@ print(x[0])
 git clone git@github.com:Udzhukhu-Eric/td-wrapper.git
 cd td-wrapper
 python setup.py sdist
-pip install dist/tdwrapper-0.0.1.tar.gz
+pip install dist/tdwrapper-0.0.2.tar.gz
 ```
