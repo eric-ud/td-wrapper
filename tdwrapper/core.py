@@ -165,8 +165,8 @@ class Query:
                 'Only list or None type is allowed for property "input_data".'
             )
 
-        query = re.sub("--.*$", "", self.query_text, flags=re.MULTILINE)
         query = re.sub("\/\*.*\*\/", "", query, flags=re.MULTILINE | re.DOTALL)
+        query = re.sub("--.*$", "", self.query_text, flags=re.MULTILINE)
         query = query.lower()
 
         insert_count = 0
