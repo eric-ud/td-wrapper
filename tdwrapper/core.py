@@ -1,15 +1,15 @@
 import teradatasql
 from pandas import DataFrame
 from abc import ABC, abstractclassmethod
-from enum import Enum
+import enum
 import re
 from typing import Optional, Union
 from datetime import datetime
 
 
-class StatementExecutionResult(Enum):
-    NOTHING_TO_FETCH = 0
-    SOMETHING_TO_FETCH = 1
+class ExecutionResult(enum.Enum):
+    NOTHING_TO_FETCH = enum.auto()
+    SOMETHING_TO_FETCH = enum.auto()
 
 
 class Statement(ABC):
@@ -17,10 +17,10 @@ class Statement(ABC):
         self.text = text
         self.execution_start: datetime = None
         self.execution_end: datetime = None
-        self.result: StatementExecutionResult = None
+        self.result: ExecutionResult = None
 
     @abstractclassmethod
-    def execute(self, cur: teradatasql.TeradataCursor) -> StatementExecutionResult:
+    def execute(self, cur: teradatasql.TeradataCursor) -> ExecutionResult:
         pass
 
 
@@ -29,23 +29,23 @@ class SqlStatement(Statement):
         self.text = text
         self.input_list = input_list
 
-    def execute(self, cur: teradatasql.TeradataCursor) -> StatementExecutionResult:
+    def execute(self, cur: teradatasql.TeradataCursor) -> ExecutionResult:
         cur.execute(self.text, self.input_list)
         # if the db is ready to send rows to the client after statement execution,
         # then cur.description is not None.
         if cur.description:
-            return StatementExecutionResult.SOMETHING_TO_FETCH
+            return ExecutionResult.SOMETHING_TO_FETCH
         else:
-            return StatementExecutionResult.NOTHING_TO_FETCH
+            return ExecutionResult.NOTHING_TO_FETCH
 
 
 class TeradataStatement(Statement):
     def __init__(self, text) -> None:
         self.text = text
 
-    def execute(self, cur: teradatasql.TeradataCursor) -> StatementExecutionResult:
+    def execute(self, cur: teradatasql.TeradataCursor) -> ExecutionResult:
         cur.execute(self.text)
-        return StatementExecutionResult.NOTHING_TO_FETCH
+        return ExecutionResult.NOTHING_TO_FETCH
 
 
 class Query:
@@ -117,12 +117,12 @@ class Query:
                     break
         return column_types
 
-    def fetch(self) -> Union[DataFrame, StatementExecutionResult]:
+    def fetch(self) -> Union[DataFrame, ExecutionResult]:
         column_types = self.get_columns()
         not_fetched = self.cur.fetchmany()
         if not not_fetched:
             self.fetched_everything = True
-            return StatementExecutionResult.SOMETHING_TO_FETCH
+            return ExecutionResult.NOTHING_TO_FETCH
 
         else:
             result = DataFrame(not_fetched, columns=list(column_types.keys()))
@@ -130,21 +130,34 @@ class Query:
             self.fetched_everything = False
             return result
 
-    def execute(self) -> StatementExecutionResult:
+    def execute(self) -> ExecutionResult:
         result = self.statements[self.current_statement].execute(self.cur)
         self.current_statement += 1
         self.length = self.cur.rowcount
         return result
 
-    def __next__(self) -> Union[DataFrame, StatementExecutionResult]:
-        if self.current_statement >= len(self.statements) and self.fetched_everything:
-            raise StopIteration
-        else:
-            if self.fetched_everything:
-                for _ in self.statements[self.current_statement :]:
-                    if self.execute() == StatementExecutionResult.SOMETHING_TO_FETCH:
-                        return self.fetch()
+    def __next__(self) -> DataFrame:
+        # in the process of fetching
+        if not self.fetched_everything:
+            result = self.fetch()
+            if (
+                isinstance(result, enum.Enum)
+                and result == ExecutionResult.NOTHING_TO_FETCH
+            ):
+                # last iteration fetched last row, so in this iteration
+                # fetched_everything switched to True.
+                raise StopIteration
             else:
+                return result
+
+        # executed all statements without fetching
+        elif self.current_statement >= len(self.statements):
+            raise StopIteration
+
+        # executing statements without returning control to the caller
+        # until there is something to fetch
+        for _ in self.statements[self.current_statement :]:
+            if self.execute() == ExecutionResult.SOMETHING_TO_FETCH:
                 return self.fetch()
 
     @staticmethod
