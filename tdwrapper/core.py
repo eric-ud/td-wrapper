@@ -52,9 +52,6 @@ class Query:
     """Class for returning one result for multiple sql statements lazily.
     Must be used with context manager.
 
-    TODO:
-    rewrite, make code simpler
-
     """
 
     def __init__(
