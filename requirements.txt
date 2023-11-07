@@ -1,2 +1,2 @@
-pandas==2.0.2
-teradatasql==17.20.0.26
+pandas==2.1.*
+teradatasql==17.20.0.*
