@@ -179,20 +179,17 @@ class Query:
             raise TypeError(
                 'Only list or None type is allowed for property "input_data".'
             )
-
-        query = re.sub(
-            "\/\*.*\*\/", "", self.query_text, flags=re.MULTILINE | re.DOTALL
-        )
-        query = re.sub("--.*$", "", query, flags=re.MULTILINE)
-        query = query.lower()
+        query = self.query_text.lower()
+        query = re.sub(r"/\*(\n|.(?<!\*/))*\*/", "", query, flags=re.MULTILINE)
+        query = re.sub(r"--.*$", "", query, flags=re.MULTILINE)
 
         insert_count = 0
         for statement in query.split(";")[:-1]:
             reg_td = re.search(
-                "{fn teradata_[\w()]*}", statement, re.MULTILINE | re.IGNORECASE
+                r"{fn teradata_[\w()]*}", statement, re.MULTILINE | re.IGNORECASE
             )
             reg_insert = re.search(
-                "^\s*insert\sinto\s([\w\d_]+)\s\([?,\s]+\);?$",
+                r"\s*insert\s+into\s+([\w\d_]+)\s+([value(s)*\s]+)?\([?,\s]+\)\s*;*",
                 statement,
                 re.MULTILINE | re.IGNORECASE,
             )

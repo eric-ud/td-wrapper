@@ -240,3 +240,46 @@ def test_insert_many_statements_one_lazy_return() -> None:
     print(test_result)
 
     assert test_result.equals(correct_result)
+
+
+def test_comments() -> None:
+    query = """
+        CALL user_dm.prc_drop_volatile_table (USER||'.test');
+
+        CREATE VOLATILE TABLE test ( --creating volatile table
+            day_id				date NOT NULL
+        )
+        UNIQUE PRIMARY INDEX (day_id)
+        ON COMMIT PRESERVE ROWS;
+        --/* you can use this stored procedure to drop volotile table;
+        CALL user_dm.prc_drop_volatile_table (USER||'.test');
+        --*/ --;
+
+        insert into test values (?);
+
+        --SELECT * FROM test ORDER BY day_id desc;
+        /*SELECT * FROM test ORDER BY day_id desc;*/
+
+        SELECT * FROM test ORDER BY day_id asc;
+
+    """
+
+    correct_result = DataFrame(
+        data={
+            "day_id": [
+                date.today() - timedelta(days=2),
+                date.today() - timedelta(days=1),
+                date.today(),
+            ]
+        }
+    )
+
+    print(correct_result)
+
+    with helpers.TeradataConnectionFromKeyring() as conn:
+        with core.Query(conn, query, [correct_result]) as query:
+            [print(s.text) for s in query.statements]
+            for result in query:
+                test_result = result
+
+    assert test_result.equals(correct_result)
