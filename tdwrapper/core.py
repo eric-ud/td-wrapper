@@ -117,13 +117,13 @@ class Query:
 
     def fetch(self) -> Union[DataFrame, StatementExecutionResult]:
         column_types = self.get_columns()
-        fetched = self.cur.fetchmany()
-        if not fetched:
+        not_fetched = self.cur.fetchmany()
+        if not not_fetched:
             self.fetched_everything = True
             return StatementExecutionResult.NEXT_RESULT
 
         else:
-            result = DataFrame(fetched, columns=list(column_types.keys()))
+            result = DataFrame(not_fetched, columns=list(column_types.keys()))
 
             self.fetched_everything = False
             return result
