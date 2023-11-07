@@ -8,8 +8,8 @@ from datetime import datetime
 
 
 class StatementExecutionResult(Enum):
-    SUCCESS = 0
-    NEXT_RESULT = 1
+    NOTHING_TO_FETCH = 0
+    SOMETHING_TO_FETCH = 1
 
 
 class Statement(ABC):
@@ -32,9 +32,9 @@ class SqlStatement(Statement):
     def execute(self, cur: teradatasql.TeradataCursor) -> StatementExecutionResult:
         cur.execute(self.text, self.input_list)
         if cur.description:  # there is a result from a statement execution
-            return StatementExecutionResult.NEXT_RESULT
+            return StatementExecutionResult.SOMETHING_TO_FETCH
         else:  # no result of a statement execution
-            return StatementExecutionResult.SUCCESS
+            return StatementExecutionResult.NOTHING_TO_FETCH
 
 
 class TeradataStatement(Statement):
@@ -43,7 +43,7 @@ class TeradataStatement(Statement):
 
     def execute(self, cur: teradatasql.TeradataCursor) -> StatementExecutionResult:
         cur.execute(self.text)
-        return StatementExecutionResult.SUCCESS
+        return StatementExecutionResult.NOTHING_TO_FETCH
 
 
 class Query:
@@ -120,7 +120,7 @@ class Query:
         not_fetched = self.cur.fetchmany()
         if not not_fetched:
             self.fetched_everything = True
-            return StatementExecutionResult.NEXT_RESULT
+            return StatementExecutionResult.SOMETHING_TO_FETCH
 
         else:
             result = DataFrame(not_fetched, columns=list(column_types.keys()))
@@ -140,7 +140,10 @@ class Query:
         else:
             if self.fetched_everything:
                 for _ in self.statements[self.current_statement :]:
-                    if self.execute_next() == StatementExecutionResult.NEXT_RESULT:
+                    if (
+                        self.execute_next()
+                        == StatementExecutionResult.SOMETHING_TO_FETCH
+                    ):
                         return self.fetch()
             else:
                 return self.fetch()
