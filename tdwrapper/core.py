@@ -31,9 +31,11 @@ class SqlStatement(Statement):
 
     def execute(self, cur: teradatasql.TeradataCursor) -> StatementExecutionResult:
         cur.execute(self.text, self.input_list)
-        if cur.description:  # there is a result from a statement execution
+        # if the db is ready to send rows to the client after statement execution,
+        # then cur.description is not None.
+        if cur.description:
             return StatementExecutionResult.SOMETHING_TO_FETCH
-        else:  # no result of a statement execution
+        else:
             return StatementExecutionResult.NOTHING_TO_FETCH
 
 
@@ -128,9 +130,9 @@ class Query:
             self.fetched_everything = False
             return result
 
-    def execute_next(self) -> StatementExecutionResult:
-        self.current_statement = self.current_statement + 1
-        result = self.statements[self.current_statement - 1].execute(self.cur)
+    def execute(self) -> StatementExecutionResult:
+        result = self.statements[self.current_statement].execute(self.cur)
+        self.current_statement += 1
         self.length = self.cur.rowcount
         return result
 
@@ -140,10 +142,7 @@ class Query:
         else:
             if self.fetched_everything:
                 for _ in self.statements[self.current_statement :]:
-                    if (
-                        self.execute_next()
-                        == StatementExecutionResult.SOMETHING_TO_FETCH
-                    ):
+                    if self.execute() == StatementExecutionResult.SOMETHING_TO_FETCH:
                         return self.fetch()
             else:
                 return self.fetch()
